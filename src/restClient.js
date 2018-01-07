@@ -82,6 +82,38 @@ export default (apiUrl, httpClient = jsonApiHttpClient) => {
     return { url, options };
   };
 
+  const transformData = (dic) => {
+    var interDic = Object.assign(
+      { id: dic.id },
+      dic.attributes,
+      dic.meta
+    );
+    if (dic.relationships) {
+      Object.keys(dic.relationships).forEach(function(key) {
+        var keyString = key + "_id";
+        if (dic.relationships[key].data) {
+          //if relationships have a data field --> assume id in data field
+          interDic[keyString] = dic.relationships[key].data.id;
+        } else if (dic.relationships[key].links) {
+          //if relationships have a link field
+          var link = dic.relationships[key].links["self"];
+          httpClient(link).then(function(response) {
+            interDic[key] = {
+              data: response.json.data,
+              count: response.json.data.length
+            };
+            interDic["count"] = response.json.data.length;
+          });
+        }
+      });
+    }
+    return interDic;
+  }
+
+  const mapData = (data) => {
+    return data.map ? data.map(transformData) : transformData(data);
+  }
+
   /**
    * @param {Object} response HTTP response from fetch()
    * @param {String} type One of the constants appearing at the top if this file, e.g. 'UPDATE'
@@ -92,41 +124,15 @@ export default (apiUrl, httpClient = jsonApiHttpClient) => {
   const convertHTTPResponseToREST = (response, type, resource, params) => {
     const { headers, json } = response;
     switch (type) {
-      case GET_MANY_REFERENCE:
       case GET_LIST:
-        var jsonData = json.data.map(function(dic) {
-          var interDic = Object.assign(
-            { id: dic.id },
-            dic.attributes,
-            dic.meta
-          );
-          if (dic.relationships) {
-            Object.keys(dic.relationships).forEach(function(key) {
-              var keyString = key + "_id";
-              if (dic.relationships[key].data) {
-                //if relationships have a data field --> assume id in data field
-                interDic[keyString] = dic.relationships[key].data.id;
-              } else if (dic.relationships[key].links) {
-                //if relationships have a link field
-                var link = dic.relationships[key].links["self"];
-                httpClient(link).then(function(response) {
-                  interDic[key] = {
-                    data: response.json.data,
-                    count: response.json.data.length
-                  };
-                  interDic["count"] = response.json.data.length;
-                });
-              }
-            });
-          }
-          return interDic;
-        });
-        return { data: jsonData, total: json.meta["total"] };
       case GET_MANY:
-        jsonData = json.data.map(function(obj) {
-          return Object.assign({ id: obj.id }, obj.attributes);
-        });
-        return { data: jsonData };
+      case GET_MANY_REFERENCE:
+      case GET_ONE:
+        const result = { data: mapData(json.data) };
+        if (json.meta.total) {
+          result.total = json.meta["total"];
+        }
+        return result;
       case UPDATE:
       case CREATE:
         return {
@@ -135,7 +141,7 @@ export default (apiUrl, httpClient = jsonApiHttpClient) => {
       case DELETE:
         return { data: json };
       default:
-        return { data: json.data };
+        throw new Error(`Unsupported fetch response type ${type}`);
     }
   };
 
