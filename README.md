@@ -4,18 +4,13 @@ A JSONAPI compatible adapter for Admin-on-REST that allows for rapidly building 
 
 ## Installation
 
-aor-jsonapi-client is available from npm. You can install it (and its required dependencies)
+aor-jsonapi-client is available from github. You can install it (and its required dependencies)
 using:
 
 ```sh
-npm install aor-jsonapi-client
+npm i --save github:isokcevic/aor-jsonapi-client#0.2.2
 ```
 
-It can also be installed using yarn:
-
-```sh
-yarn add aor-jsonapi-client
-```
 
 ## Usage
 
