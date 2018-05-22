@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.queryParameters = exports.jsonApiHttpClient = undefined;
+exports.queryParameters = exports.jsonApiHttpClient = exports.fetchJson = undefined;
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
@@ -13,7 +13,7 @@ var _HttpError2 = _interopRequireDefault(_HttpError);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var fetchJson = function fetchJson(url) {
+var fetchJson = exports.fetchJson = function fetchJson(url) {
   var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
   var requestHeaders = options.headers || new Headers({
@@ -47,7 +47,14 @@ var fetchJson = function fetchJson(url) {
       // not json, no big deal
     }
     if (status < 200 || status >= 300) {
-      return Promise.reject(new _HttpError2.default(json && json.message || statusText, status));
+      if (json && json.errors) {
+        var reject = Promise.reject(new _HttpError2.default(json.errors[0].code, json.errors[0].status));
+
+        console.log("API error:", reject);
+        return reject;
+      } else {
+        return Promise.reject(new _HttpError2.default(json && json.message || statusText, status));
+      }
     }
     return { status: status, headers: headers, body: body, json: json };
   });
