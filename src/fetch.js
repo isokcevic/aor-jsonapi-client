@@ -29,9 +29,16 @@ const fetchJson = (url, options = {}) => {
         // not json, no big deal
       }
       if (status < 200 || status >= 300) {
-        return Promise.reject(
-          new HttpError((json && json.message) || statusText, status)
-        );
+        if (json && json.errors) {
+          const reject =  Promise.reject(
+            new HttpError(json.errors[0].code, json.errors[0].status)
+          )
+          return reject
+        } else {
+          return Promise.reject(
+            new HttpError((json && json.message) || statusText, status)
+          );
+        }
       }
       return { status, headers, body, json };
     });
