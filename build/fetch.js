@@ -49,8 +49,6 @@ var fetchJson = exports.fetchJson = function fetchJson(url) {
     if (status < 200 || status >= 300) {
       if (json && json.errors) {
         var reject = Promise.reject(new _HttpError2.default(json.errors[0].code, json.errors[0].status));
-
-        console.log("API error:", reject);
         return reject;
       } else {
         return Promise.reject(new _HttpError2.default(json && json.message || statusText, status));
